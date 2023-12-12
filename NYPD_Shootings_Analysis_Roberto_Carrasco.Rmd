@@ -1,0 +1,114 @@
+---
+title: "carrasco_roberto_project"
+author: "Roberto Carrasco"
+date: "2023-12-12"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## NYDP Shooting Incident Data Report
+
+## Introduction
+
+This report analyzes shooting incident data from New York City. The goal is to understand patterns in shooting incidents, such as their distribution over time and across different boroughs.
+
+## Data Import
+
+```{r import, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+
+shooting_data <- read_csv("https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD")
+```
+
+## Data Summary
+```{r summary, include=TRUE}
+summary(shooting_data)
+str(shooting_data)
+```
+
+##Data Cleaning
+```{r cleaning, include=TRUE}
+shooting_data_clean <- shooting_data %>%
+  mutate(OCCUR_DATE = mdy(OCCUR_DATE),
+         BORO = as.factor(BORO),
+         ) %>%
+  select(-LOC_OF_OCCUR_DESC,-LOC_CLASSFCTN_DESC, -LOCATION_DESC, -Lon_Lat) 
+```
+
+
+#Visualization and Analysis
+
+###Incidents by Borough
+```{r visuals, include=TRUE}
+# Bar Plot of Incidents by Borough
+ggplot(shooting_data_clean, aes(x = BORO)) + geom_bar() + labs(title = "Incidents by Borough")
+
+```
+
+## Visualization of Incidents by Hour of Day
+
+This bar plot shows the number of shooting incidents that occur at each hour of the day, giving us an insight into when these incidents are most likely to happen.
+
+```{r byhour, include=TRUE}
+
+shooting_data_clean$HourOfDay <- hour(hms(shooting_data_clean$OCCUR_TIME))
+
+# Create a bar plot
+ggplot(shooting_data_clean, aes(x = HourOfDay)) +
+  geom_bar() +
+  scale_x_continuous(breaks = 0:23) +
+  labs(title = "Number of Shooting Incidents by Hour of Day", 
+       x = "Hour of Day (0-23)", 
+       y = "Count of Incidents")
+```
+
+
+
+## Analysis of Shooting Trends Over Time
+
+To understand whether the number of shooting incidents in NYC has been increasing or decreasing over time, we'll use a linear regression model. This model will help us see the trend of incidents across the date range of our data.
+
+```{r trend-analysis,include=TRUE}
+
+# Preparing the data: Counting incidents per day
+shooting_trends <- shooting_data_clean %>%
+  group_by(OCCUR_DATE) %>%
+  summarize(DailyCount = n())
+
+# Creating a linear regression model
+trend_model <- lm(DailyCount ~ OCCUR_DATE, data = shooting_trends)
+summary(trend_model)
+
+# Plotting the trend
+ggplot(shooting_trends, aes(x = OCCUR_DATE, y = DailyCount)) +
+  geom_line() +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Trend of Daily Shooting Incidents Over Time", 
+       x = "Date", 
+       y = "Number of Incidents")
+```
+
+
+
+
+##Conclusion and Bias Identification 
+The final conclusion in our simple replicatable analysis is that there are the most shootings historically in BRONX and BROOKLYN. Some Bias that may be present is in the data collection such as underreporting and overrepresentation of certain areas.
+Another bias may be my selection bias in choosing the BOROUGH data Columns where an exact location using longitude and latitude might reveal different insights.
+
+Other observations that may be bias are the time of day that an incident was recorded. We cannot be certin that the time of reporting and documentation is exact to the time of the shooting. There may be a lag presetn in the times and the shootings. However apart from that there seems to be no other apparent bias for the second visualization.
+
+The last model made shows an overall downtrend on the number of shootings in NYC but there is an interesting jump towards the tail end of the model. Meaning if you were to take the model as a whole and assume things are getting better from a far back perspective you are failing to see the huge increase in recent years that show up on the model. This conclusion from the regression model can then be used unethically to report on a downtrend of shootings when in recent years it has been on an uptrend. Some bias may be attributed to the pandemic and other factors making the final years drop off from the huge jump not as promising. This of course is for NYC as a whole and further analysis would be needed to see if certain Boroughs are improving and what they are doing to do so.
+
+
+
+# Display session info
+sessionInfo()
