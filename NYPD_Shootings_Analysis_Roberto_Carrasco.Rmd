@@ -111,4 +111,6 @@ The last model made shows an overall downtrend on the number of shootings in NYC
 
 
 # Display session info
-sessionInfo()
+```{r info, include = TRUE}
+  sessionInfo()
+```
